@@ -14,21 +14,19 @@ import (
 
 // HTTPToolHandler handles tool execution by making HTTP requests
 type HTTPToolHandler struct {
-	endpoint *Endpoint
-	backend  *Backend
-	logger   *slog.Logger
-	client   *http.Client
+	endpoint      *Endpoint
+	backend       *Backend
+	logger        *slog.Logger
+	clientManager *ClientManager
 }
 
 // NewHTTPToolHandler creates a new HTTP tool handler
-func NewHTTPToolHandler(endpoint *Endpoint, backend *Backend, logger *slog.Logger) *HTTPToolHandler {
+func NewHTTPToolHandler(endpoint *Endpoint, backend *Backend, logger *slog.Logger, clientManager *ClientManager) *HTTPToolHandler {
 	return &HTTPToolHandler{
-		endpoint: endpoint,
-		backend:  backend,
-		logger:   logger,
-		client: &http.Client{
-			Timeout: endpoint.ResponseTimeout,
-		},
+		endpoint:      endpoint,
+		backend:       backend,
+		logger:        logger,
+		clientManager: clientManager,
 	}
 }
 
@@ -113,8 +111,8 @@ func (h *HTTPToolHandler) Handler(ctx context.Context, req mcp.CallToolRequest) 
 		"url", url,
 	)
 
-	// Make the HTTP request
-	resp, err := h.client.Do(httpReq)
+	// Make the HTTP request using client manager
+	resp, err := h.clientManager.DoRequest(ctx, httpReq, h.endpoint.Name)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}

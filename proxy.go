@@ -54,8 +54,9 @@ type config struct {
 
 // Proxy encapsulates an MCP server and manages resources like pipes and context.
 type Proxy struct {
-	config config
-	logger *slog.Logger
+	config        config
+	logger        *slog.Logger
+	clientManager *ClientManager
 
 	tools     []server.ServerTool
 	prompts   []server.ServerPrompt
@@ -75,7 +76,8 @@ func NewServer(opts ...Option) (*Proxy, error) {
 			Addr:    ":8888",
 			BaseURL: "",
 		},
-		logger: slog.Default(),
+		logger:        slog.Default(),
+		clientManager: NewClientManager(),
 	}
 
 	// Apply options
@@ -94,7 +96,8 @@ func NewServerFromConfig(cfg *Config, opts ...Option) (*Proxy, error) {
 			Addr:    ":8888",
 			BaseURL: "",
 		},
-		logger: slog.Default(),
+		logger:        slog.Default(),
+		clientManager: NewClientManager(),
 	}
 
 	// Apply options
@@ -150,18 +153,18 @@ func (s *Proxy) setupToolEndpoint(endpoint *Endpoint, backend *Backend) error {
 		endpoint.ResponseTimeout = 30 * time.Second
 	}
 
-	handler := NewHTTPToolHandler(endpoint, backend, s.logger)
+	handler := NewHTTPToolHandler(endpoint, backend, s.logger, s.clientManager)
 	tool := handler.CreateMCPTool()
-	
+
 	s.AddTool(tool, handler.Handler)
-	
+
 	s.logger.Info("Added tool endpoint",
 		"name", endpoint.Name,
 		"mode", endpoint.Mode,
 		"path", endpoint.Path,
 		"method", endpoint.Method,
 	)
-	
+
 	return nil
 }
 
@@ -172,8 +175,8 @@ func (s *Proxy) setupResourceEndpoint(endpoint *Endpoint, backend *Backend) erro
 		endpoint.ResponseTimeout = 30 * time.Second
 	}
 
-	handler := NewHTTPResourceHandler(endpoint, backend, s.logger)
-	
+	handler := NewHTTPResourceHandler(endpoint, backend, s.logger, s.clientManager)
+
 	// Check if this is a dynamic resource (has path parameters)
 	if resourceTemplate := handler.CreateMCPResourceTemplate(); resourceTemplate != nil {
 		// Add as resource template for dynamic resources
@@ -195,7 +198,7 @@ func (s *Proxy) setupResourceEndpoint(endpoint *Endpoint, backend *Backend) erro
 			"method", endpoint.Method,
 		)
 	}
-	
+
 	return nil
 }
 
@@ -206,17 +209,17 @@ func (s *Proxy) setupPromptEndpoint(endpoint *Endpoint, backend *Backend) error 
 		endpoint.ResponseTimeout = 30 * time.Second
 	}
 
-	handler := NewHTTPPromptHandler(endpoint, backend, s.logger)
+	handler := NewHTTPPromptHandler(endpoint, backend, s.logger, s.clientManager)
 	prompt := handler.CreateMCPPrompt()
-	
+
 	s.AddPrompt(prompt, handler.Handler)
-	
+
 	s.logger.Info("Added prompt endpoint",
 		"name", endpoint.Name,
 		"path", endpoint.Path,
 		"method", endpoint.Method,
 	)
-	
+
 	return nil
 }
 
@@ -267,7 +270,7 @@ func (s *Proxy) AddResourceTemplate(template mcp.ResourceTemplate, handler serve
 	if template.URITemplate != nil {
 		uriTemplate = template.URITemplate.Template.Raw()
 	}
-	
+
 	resource := mcp.Resource{
 		URI:         uriTemplate,
 		Name:        template.Name,

@@ -14,21 +14,19 @@ import (
 
 // HTTPResourceHandler handles resource requests by making HTTP requests
 type HTTPResourceHandler struct {
-	endpoint *Endpoint
-	backend  *Backend
-	logger   *slog.Logger
-	client   *http.Client
+	endpoint      *Endpoint
+	backend       *Backend
+	logger        *slog.Logger
+	clientManager *ClientManager
 }
 
 // NewHTTPResourceHandler creates a new HTTP resource handler
-func NewHTTPResourceHandler(endpoint *Endpoint, backend *Backend, logger *slog.Logger) *HTTPResourceHandler {
+func NewHTTPResourceHandler(endpoint *Endpoint, backend *Backend, logger *slog.Logger, clientManager *ClientManager) *HTTPResourceHandler {
 	return &HTTPResourceHandler{
-		endpoint: endpoint,
-		backend:  backend,
-		logger:   logger,
-		client: &http.Client{
-			Timeout: endpoint.ResponseTimeout,
-		},
+		endpoint:      endpoint,
+		backend:       backend,
+		logger:        logger,
+		clientManager: clientManager,
 	}
 }
 
@@ -64,7 +62,7 @@ func (h *HTTPResourceHandler) generateResourceURI() string {
 // generateResourceURITemplate creates a URI template for dynamic resources
 func (h *HTTPResourceHandler) generateResourceURITemplate() string {
 	uri := fmt.Sprintf("proxy://%s", h.endpoint.Name)
-	
+
 	// Add path parameters to the URI template
 	if len(h.endpoint.PathParameters) > 0 {
 		var params []string
@@ -73,7 +71,7 @@ func (h *HTTPResourceHandler) generateResourceURITemplate() string {
 		}
 		uri += "/" + strings.Join(params, "/")
 	}
-	
+
 	return uri
 }
 
@@ -115,8 +113,8 @@ func (h *HTTPResourceHandler) Handler(ctx context.Context, req mcp.ReadResourceR
 		"url", url,
 	)
 
-	// Make the HTTP request
-	resp, err := h.client.Do(httpReq)
+	// Make the HTTP request using client manager
+	resp, err := h.clientManager.DoRequest(ctx, httpReq, h.endpoint.Name)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}

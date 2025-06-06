@@ -7,5 +7,8 @@ This guide helps you run the complete MCP HTTP Proxy demo with a real REST API b
 
 ```bash
 # Start the MCP HTTP Proxy with configuration
-go run cmd/proxy/main.go --config ./example/typicode/config.yml
+go run cmd/proxy/main.go --config ./example/config.yml
+
+# After starting the proxy, run the MCP client
+go run ./example/main.go
 ```

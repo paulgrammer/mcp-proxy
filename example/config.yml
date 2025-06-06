@@ -37,7 +37,8 @@ backends:
             required: true
 
       # Resource example - Get posts
-      - capability: resource
+      - capability: tool
+        mode: client
         name: posts
         path: "/posts"
         method: GET
@@ -46,7 +47,8 @@ backends:
         response_timeout: 30s
 
       # Resource example with path parameter - Get specific post
-      - capability: resource
+      - capability: tool
+        mode: client
         name: post_by_id
         path: "/posts/{id}"
         method: GET

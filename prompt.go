@@ -14,21 +14,19 @@ import (
 
 // HTTPPromptHandler handles prompt requests by making HTTP requests
 type HTTPPromptHandler struct {
-	endpoint *Endpoint
-	backend  *Backend
-	logger   *slog.Logger
-	client   *http.Client
+	endpoint      *Endpoint
+	backend       *Backend
+	logger        *slog.Logger
+	clientManager *ClientManager
 }
 
 // NewHTTPPromptHandler creates a new HTTP prompt handler
-func NewHTTPPromptHandler(endpoint *Endpoint, backend *Backend, logger *slog.Logger) *HTTPPromptHandler {
+func NewHTTPPromptHandler(endpoint *Endpoint, backend *Backend, logger *slog.Logger, clientManager *ClientManager) *HTTPPromptHandler {
 	return &HTTPPromptHandler{
-		endpoint: endpoint,
-		backend:  backend,
-		logger:   logger,
-		client: &http.Client{
-			Timeout: endpoint.ResponseTimeout,
-		},
+		endpoint:      endpoint,
+		backend:       backend,
+		logger:        logger,
+		clientManager: clientManager,
 	}
 }
 
@@ -107,8 +105,8 @@ func (h *HTTPPromptHandler) Handler(ctx context.Context, req mcp.GetPromptReques
 		"url", url,
 	)
 
-	// Make the HTTP request
-	resp, err := h.client.Do(httpReq)
+	// Make the HTTP request using client manager
+	resp, err := h.clientManager.DoRequest(ctx, httpReq, h.endpoint.Name)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
