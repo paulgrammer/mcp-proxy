@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,6 +12,16 @@ import (
 )
 
 func main() {
+	// Define command-line flags
+	configPath := flag.String("config", "./config.yml", "Path to the configuration file")
+	flag.Parse()
+
+	// Parse the configuration
+	_, err := proxy.ParseConfig(*configPath)
+	if err != nil {
+		panic(err)
+	}
+
 	// Set up structured logging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
@@ -31,7 +42,7 @@ func main() {
 	}()
 
 	// Create proxy with options
-	srv, err := proxy.NewServer(ctx,
+	srv, err := proxy.NewServer(
 		proxy.WithName(getEnvOrDefault("SERVER_NAME", "mcp-proxy")),
 		proxy.WithAddr(getEnvOrDefault("SERVER_ADDR", ":8888")),
 		proxy.WithBaseURL(getEnvOrDefault("SERVER_BASE_URL", "http://localhost:8888")),
@@ -43,17 +54,13 @@ func main() {
 	}
 	defer srv.Close()
 
+	logger.Info("Server started successfully")
+
 	// Start proxy
-	if err := srv.Start(); err != nil {
+	if err := srv.Start(ctx); err != nil {
 		logger.Error("Failed to start proxy", "error", err)
 		os.Exit(1)
 	}
-
-	logger.Info("Server started successfully")
-
-	// Wait for shutdown signal
-	<-ctx.Done()
-	logger.Info("Shutting down proxy...")
 }
 
 // getEnvOrDefault returns the value of the environment variable or a default value

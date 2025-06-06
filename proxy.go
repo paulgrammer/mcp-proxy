@@ -61,9 +61,6 @@ type Proxy struct {
 	prompts   []server.ServerPrompt
 	resources []server.ServerResource
 
-	ctx    context.Context
-	cancel func()
-
 	transport transport.Interface
 	client    *client.Client
 
@@ -71,10 +68,10 @@ type Proxy struct {
 }
 
 // NewServer creates a new MCP server with the given options.
-func NewServer(ctx context.Context, opts ...Option) (*Proxy, error) {
+func NewServer(opts ...Option) (*Proxy, error) {
 	server := &Proxy{
 		config: config{
-			Name:    "telephony-apps",
+			Name:    "mpc-proxy",
 			Addr:    ":8888",
 			BaseURL: "",
 		},
@@ -85,9 +82,6 @@ func NewServer(ctx context.Context, opts ...Option) (*Proxy, error) {
 	for _, opt := range opts {
 		opt(server)
 	}
-
-	// Set up context with cancellation, used to stop the server
-	server.ctx, server.cancel = context.WithCancel(ctx)
 
 	return server, nil
 }
@@ -133,7 +127,7 @@ func (s *Proxy) AddResources(resources ...server.ServerResource) {
 
 // Start starts the server in a goroutine. Make sure to defer Close() after Start().
 // When using NewServer(), the returned server is already started.
-func (s *Proxy) Start() error {
+func (s *Proxy) Start(ctx context.Context) error {
 	s.wg.Add(1)
 
 	addr := s.config.Addr
@@ -184,7 +178,7 @@ func (s *Proxy) Start() error {
 		}()
 
 		// Wait for context cancellation to shutdown server
-		<-s.ctx.Done()
+		<-ctx.Done()
 		s.logger.Info("Shutting down HTTP server...")
 
 		// Create shutdown context with timeout
@@ -205,7 +199,7 @@ func (s *Proxy) Start() error {
 
 	s.transport = transport
 
-	if err := s.transport.Start(s.ctx); err != nil {
+	if err := s.transport.Start(ctx); err != nil {
 		return fmt.Errorf("transport.Start(): %w", err)
 	}
 
@@ -213,7 +207,7 @@ func (s *Proxy) Start() error {
 
 	var initReq mcp.InitializeRequest
 	initReq.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
-	if _, err := s.client.Initialize(s.ctx, initReq); err != nil {
+	if _, err := s.client.Initialize(ctx, initReq); err != nil {
 		return fmt.Errorf("client.Initialize(): %w", err)
 	}
 
@@ -226,11 +220,6 @@ func (s *Proxy) Close() {
 		s.transport.Close()
 		s.transport = nil
 		s.client = nil
-	}
-
-	if s.cancel != nil {
-		s.cancel()
-		s.cancel = nil
 	}
 
 	// Wait for server goroutine to finish

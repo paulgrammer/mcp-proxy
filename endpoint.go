@@ -123,11 +123,11 @@ type Endpoint struct {
 	// Method defines the HTTP method for the proxy request to your endpoint
 	Method Method `json:"method" yaml:"method"`
 
-	// URL is the HTTP endpoint that this Endpoint will proxy to
+	// Path is the endpoint path that will be appended to the backend's BaseURL
 	// Supports path parameter templates using curly braces: "/users/{user_id}/orders/{order_id}"
-	// Environment variables can be used: "${BASE_URL}/api/v1/orders"
-	// Examples: "https://api.example.com/orders", "/api/users/{user_id}", "${API_BASE}/templates"
-	URL string `json:"url" yaml:"url"`
+	// Examples: "/orders", "/users/{user_id}", "/templates/generate"
+	// The full URL becomes: Backend.BaseURL + Endpoint.Path
+	Path string `json:"path" yaml:"path"`
 
 	// Description explains the Endpoint's purpose to the LLM
 	// Tools: when and how to use this action and any constraints or requirements
