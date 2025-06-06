@@ -31,19 +31,7 @@ A configurable proxy server that bridges Model Context Protocol (MCP) endpoints 
    cd mcp-proxy
    ```
 
-2. **Create your configuration**
-   ```bash
-   cp config/sample.yaml config/proxy.yaml
-   # Edit proxy.yaml with your API endpoints
-   ```
-
-3. **Set environment variables**
-   ```bash
-   export API_BASE_URL=https://api.yourservice.com
-   export API_TOKEN=your-secret-token
-   ```
-
-4. **Run the proxy**
+2. **Run the proxy**
    ```bash
    go run main.go --config config/proxy.yaml
    ```

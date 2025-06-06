@@ -3,7 +3,6 @@ module github.com/paulgrammer/mcp-proxy
 go 1.24.2
 
 require (
-	github.com/gorilla/mux v1.8.1
 	github.com/mark3labs/mcp-go v0.31.1-0.20250605111858-774b17bb03e2
 	gopkg.in/yaml.v3 v3.0.1
 )
