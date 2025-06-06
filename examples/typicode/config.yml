@@ -1,0 +1,70 @@
+mcp:
+  server_name: "MCP HTTP Proxy"
+  version: "1.0.0"
+
+backends:
+  - base_url: "https://jsonplaceholder.typicode.com"
+    default_headers:
+      - type: constant
+        name: "Content-Type"
+        value: "application/json"
+
+    endpoints:
+      # Tool example - Create a post
+      - capability: tool
+        mode: client
+        name: create_post
+        path: "/posts"
+        method: POST
+        description: "Creates a new post with title and body"
+        wait_response: true
+        response_timeout: 30s
+        body_params:
+          - data_type: string
+            value_type: dynamic
+            description: "The post title"
+            identifier: title
+            required: true
+          - data_type: string
+            value_type: dynamic
+            description: "The post body content"
+            identifier: body
+            required: true
+          - data_type: number
+            value_type: dynamic
+            description: "User ID of the post author"
+            identifier: userId
+            required: true
+
+      # Resource example - Get posts
+      - capability: resource
+        name: posts
+        path: "/posts"
+        method: GET
+        description: "Retrieves all posts from the API"
+        wait_response: true
+        response_timeout: 30s
+
+      # Resource example with path parameter - Get specific post
+      - capability: resource
+        name: post_by_id
+        path: "/posts/{id}"
+        method: GET
+        description: "Retrieves a specific post by ID"
+        wait_response: true
+        response_timeout: 30s
+        path_parameters:
+          - data_type: number
+            value_type: dynamic
+            description: "The post ID to retrieve"
+            identifier: id
+            required: true
+
+      # Prompt example - Generate a post template
+      - capability: prompt
+        name: post_template
+        path: "/posts/1"
+        method: GET
+        description: "Generates a template for creating posts based on existing post structure"
+        wait_response: true
+        response_timeout: 30s
