@@ -128,7 +128,18 @@ func (h *HTTPToolHandler) buildURL(arguments map[string]any) (string, error) {
 
 	// Replace path parameters
 	for _, param := range h.endpoint.PathParameters {
-		value, exists := arguments[param.Identifier]
+		var value any
+		var exists bool
+
+		if param.ValueType == CONSTANT {
+			// Use the predefined value for constant parameters
+			value = param.Value
+			exists = param.Value != ""
+		} else {
+			// Use the value from arguments for dynamic parameters
+			value, exists = arguments[param.Identifier]
+		}
+
 		if !exists && param.Required {
 			return "", fmt.Errorf("required path parameter '%s' not provided", param.Identifier)
 		}
@@ -146,7 +157,18 @@ func (h *HTTPToolHandler) buildQueryParams(arguments map[string]any) string {
 	var params []string
 
 	for _, param := range h.endpoint.QueryParameters {
-		value, exists := arguments[param.Identifier]
+		var value any
+		var exists bool
+
+		if param.ValueType == CONSTANT {
+			// Use the predefined value for constant parameters
+			value = param.Value
+			exists = param.Value != ""
+		} else {
+			// Use the value from arguments for dynamic parameters
+			value, exists = arguments[param.Identifier]
+		}
+
 		if exists {
 			params = append(params, fmt.Sprintf("%s=%v", param.Identifier, value))
 		}
@@ -163,7 +185,18 @@ func (h *HTTPToolHandler) buildRequestBody(arguments map[string]any) ([]byte, er
 
 	body := make(map[string]any)
 	for _, param := range h.endpoint.BodyParams {
-		value, exists := arguments[param.Identifier]
+		var value any
+		var exists bool
+
+		if param.ValueType == CONSTANT {
+			// Use the predefined value for constant parameters
+			value = param.Value
+			exists = param.Value != ""
+		} else {
+			// Use the value from arguments for dynamic parameters
+			value, exists = arguments[param.Identifier]
+		}
+
 		if exists {
 			body[param.Identifier] = value
 		} else if param.Required {

@@ -101,6 +101,10 @@ type Param struct {
 	// Required indicates if the LLM must extract this parameter before making the request
 	// If true and the parameter cannot be extracted, the tool execution will fail
 	Required bool `json:"required" yaml:"required"`
+
+	// Value is the static value for constant parameters
+	// Only used when ValueType is CONSTANT or STATIC
+	Value string `json:"value,omitempty" yaml:"value,omitempty"`
 }
 
 // Endpoint defines a complete MCP Endpoint that proxies to an HTTP endpoint

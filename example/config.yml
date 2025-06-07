@@ -70,3 +70,37 @@ backends:
         description: "Generates a template for creating posts based on existing post structure"
         wait_response: true
         response_timeout: 30s
+  - base_url: "https://api.open-meteo.com"
+    endpoints:
+      # Weather forecast endpoint
+      - capability: tool
+        mode: client
+        name: get_weather
+        path: "/v1/forecast"
+        method: GET
+        description: "Get the weather forecast for temperature, wind speed and relative humidity"
+        wait_response: true
+        response_timeout: 30s
+        query_parameters:
+          - data_type: number
+            value_type: dynamic
+            description: "The latitude of the location to get the weather for"
+            identifier: latitude
+            required: true
+          - data_type: number
+            value_type: dynamic
+            description: "The longitude of the location to get the weather for"
+            identifier: longitude
+            required: true
+          - data_type: string
+            value_type: constant
+            description: "Current weather parameters to include"
+            identifier: current
+            required: true
+            value: "temperature_2m,wind_speed_10m"
+          - data_type: string
+            value_type: constant
+            description: "Hourly weather parameters to include"
+            identifier: hourly
+            required: true
+            value: "temperature_2m,relative_humidity_2m,wind_speed_10m"
