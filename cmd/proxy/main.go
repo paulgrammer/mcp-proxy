@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,10 +12,28 @@ import (
 	proxy "github.com/paulgrammer/mcp-proxy"
 )
 
+// A version string that can be set with
+//
+//	-ldflags "-X main.Build=SOMEVERSION"
+//
+// at compile-time.
+var Build string
+
 func main() {
 	// Define command-line flags
 	configPath := flag.String("config", "./config.yml", "Path to the configuration file")
+	version := flag.Bool("version", false, "Print version information and exit")
 	flag.Parse()
+
+	// Handle version flag
+	if *version {
+		if Build != "" {
+			fmt.Printf("mcp-proxy version %s\n", Build)
+		} else {
+			fmt.Println("mcp-proxy version unknown (development build)")
+		}
+		os.Exit(0)
+	}
 
 	// Set up structured logging first
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
@@ -29,7 +48,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("Configuration loaded successfully", 
+	logger.Info("Configuration loaded successfully",
 		"server_name", cfg.MCP.ServerName,
 		"version", cfg.MCP.Version,
 		"backends", len(cfg.Backends),
