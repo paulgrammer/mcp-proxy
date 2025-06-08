@@ -37,7 +37,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /proxy cmd/proxy
 # Final image
 FROM gcr.io/distroless/static:latest
 COPY --from=golang /proxy .
-COPY --from=golang /config.yml .
+COPY --from=golang /app/config.yml .
 
 EXPOSE 8888
 
