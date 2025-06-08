@@ -189,7 +189,7 @@ func (s *Proxy) setupBackendEndpoints(backend *Backend) error {
 func (s *Proxy) setupToolEndpoint(endpoint *Endpoint, backend *Backend) error {
 	// Set default timeout if not specified
 	if endpoint.ResponseTimeout == 0 {
-		endpoint.ResponseTimeout = 30 * time.Second
+		endpoint.ResponseTimeout = Duration(30 * time.Second)
 	}
 
 	handler := NewHTTPToolHandler(endpoint, backend, s.logger, s.clientManager)
@@ -211,7 +211,7 @@ func (s *Proxy) setupToolEndpoint(endpoint *Endpoint, backend *Backend) error {
 func (s *Proxy) setupResourceEndpoint(endpoint *Endpoint, backend *Backend) error {
 	// Set default timeout if not specified
 	if endpoint.ResponseTimeout == 0 {
-		endpoint.ResponseTimeout = 30 * time.Second
+		endpoint.ResponseTimeout = Duration(30 * time.Second)
 	}
 
 	handler := NewHTTPResourceHandler(endpoint, backend, s.logger, s.clientManager)
@@ -245,7 +245,7 @@ func (s *Proxy) setupResourceEndpoint(endpoint *Endpoint, backend *Backend) erro
 func (s *Proxy) setupPromptEndpoint(endpoint *Endpoint, backend *Backend) error {
 	// Set default timeout if not specified
 	if endpoint.ResponseTimeout == 0 {
-		endpoint.ResponseTimeout = 30 * time.Second
+		endpoint.ResponseTimeout = Duration(30 * time.Second)
 	}
 
 	handler := NewHTTPPromptHandler(endpoint, backend, s.logger, s.clientManager)
@@ -364,9 +364,10 @@ func (s *Proxy) configAPIHandler() http.Handler {
 				return
 			}
 
+			fmt.Println(">?>>>>>>>>>>>>>>>>>>", string(body))
 			var newConfig Config
 			if err := json.Unmarshal(body, &newConfig); err != nil {
-				http.Error(w, "Invalid JSON", http.StatusBadRequest)
+				http.Error(w, fmt.Sprintf("Invalid JSON: %s", err.Error()), http.StatusBadRequest)
 				return
 			}
 
@@ -460,7 +461,6 @@ func (s *Proxy) Start(ctx context.Context) error {
 		mux.Handle("/api/", configAPI)
 		mux.Handle("/config/", webHandler)
 		mux.Handle("/assets/", webHandler)
-		// mux.Handle("/", webHandler)
 
 		httpServer := &http.Server{
 			Addr:    addr,

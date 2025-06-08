@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"net/http"
-	"time"
 )
 
 // Type aliases for better code readability and type safety
@@ -153,7 +152,7 @@ type Endpoint struct {
 	// ResponseTimeout sets maximum wait time for your endpoint to respond
 	// Only applies when WaitResponse is true. Default: 20 seconds
 	// Consider your endpoint's typical response time when setting this value
-	ResponseTimeout time.Duration `json:"response_timeout" yaml:"response_timeout"`
+	ResponseTimeout Duration `json:"response_timeout" yaml:"response_timeout"`
 
 	// BodyParams define data that will be extracted and sent in the HTTP request body
 	// Tools: parameters for the action to execute
