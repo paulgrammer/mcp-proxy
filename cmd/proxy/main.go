@@ -41,19 +41,6 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	// Parse the configuration
-	cfg, err := proxy.ParseConfig(*configPath)
-	if err != nil {
-		logger.Error("Failed to parse configuration", "error", err, "config_path", *configPath)
-		os.Exit(1)
-	}
-
-	logger.Info("Configuration loaded successfully",
-		"server_name", cfg.MCP.ServerName,
-		"version", cfg.MCP.Version,
-		"backends", len(cfg.Backends),
-	)
-
 	// Set up context for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -67,8 +54,8 @@ func main() {
 		cancel()
 	}()
 
-	// Create proxy from configuration
-	srv, err := proxy.NewServerFromConfig(cfg,
+	// Create proxy from configuration file
+	srv, err := proxy.NewServerFromConfigFile(*configPath,
 		proxy.WithAddr(getEnvOrDefault("SERVER_ADDR", ":8888")),
 		proxy.WithBaseURL(getEnvOrDefault("SERVER_BASE_URL", "http://localhost:8888")),
 		proxy.WithLogger(logger),

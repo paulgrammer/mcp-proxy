@@ -1,27 +1,38 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronRight, Globe, Settings, Trash2, Plus } from "lucide-react"
-import type { ApiService } from "../types"
-import { EndpointCard } from "./endpoint-card"
-import { HeadersSection } from "./headers-section"
-import { ConfirmationDialog } from "./confirmation-dialog"
+import { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  ChevronDown,
+  ChevronRight,
+  Globe,
+  Settings,
+  Trash2,
+  Plus,
+} from "lucide-react";
+import type { ApiService } from "../../types";
+import { EndpointCard } from "./endpoint-card";
+import { HeadersSection } from "./headers-section";
+import { ConfirmationDialog } from "./confirmation-dialog";
 
 interface ServiceCardProps {
-  service: ApiService
-  serviceIndex: number
-  onUpdate: (field: keyof ApiService, value: any) => void
-  onRemove: () => void
-  onAddEndpoint: () => void
-  onUpdateEndpoint: (endpointIndex: number, field: string, value: any) => void
-  onRemoveEndpoint: (endpointIndex: number) => void
-  onMarkChanged: () => void
+  service: ApiService;
+  serviceIndex: number;
+  onUpdate: (field: keyof ApiService, value: any) => void;
+  onRemove: () => void;
+  onAddEndpoint: () => void;
+  onUpdateEndpoint: (endpointIndex: number, field: string, value: any) => void;
+  onRemoveEndpoint: (endpointIndex: number) => void;
+  onMarkChanged: () => void;
 }
 
 export function ServiceCard({
@@ -33,42 +44,49 @@ export function ServiceCard({
   onUpdateEndpoint,
   onRemoveEndpoint,
   onMarkChanged,
-}: ServiceCardProps) {
-  const [isExpanded, setIsExpanded] = useState(serviceIndex === 0)
-  const [activeSection, setActiveSection] = useState<"endpoints" | "headers">("endpoints")
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+}: Readonly<ServiceCardProps>) {
+  console.log(service)
+  const [isExpanded, setIsExpanded] = useState(serviceIndex === 0);
+  const [activeSection, setActiveSection] = useState<"endpoints" | "headers">(
+    "endpoints"
+  );
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const getServiceName = () => {
     if (service.base_url) {
       try {
-        return new URL(service.base_url).hostname
+        return new URL(service.base_url).hostname;
       } catch {
-        return service.base_url
+        return service.base_url;
       }
     }
-    return `Service ${serviceIndex + 1}`
-  }
+    return `Service ${serviceIndex + 1}`;
+  };
 
   const handleUpdate = (field: keyof ApiService, value: any) => {
-    onUpdate(field, value)
-    onMarkChanged()
-  }
+    onUpdate(field, value);
+    onMarkChanged();
+  };
 
-  const handleUpdateEndpoint = (endpointIndex: number, field: string, value: any) => {
-    onUpdateEndpoint(endpointIndex, field, value)
-    onMarkChanged()
-  }
+  const handleUpdateEndpoint = (
+    endpointIndex: number,
+    field: string,
+    value: any
+  ) => {
+    onUpdateEndpoint(endpointIndex, field, value);
+    onMarkChanged();
+  };
 
   const handleRemoveEndpoint = (endpointIndex: number) => {
-    onRemoveEndpoint(endpointIndex)
-    onMarkChanged()
-  }
+    onRemoveEndpoint(endpointIndex);
+    onMarkChanged();
+  };
 
   const handleRemove = () => {
-    setShowDeleteDialog(false)
-    onRemove()
-    onMarkChanged()
-  }
+    setShowDeleteDialog(false);
+    onRemove();
+    onMarkChanged();
+  };
 
   return (
     <>
@@ -85,18 +103,24 @@ export function ServiceCard({
                   )}
                   <Globe className="h-5 w-5" />
                   <div>
-                    <h3 className="font-semibold text-lg">{getServiceName()}</h3>
-                    <p className="text-sm text-muted-foreground">{service.base_url || "No URL configured"}</p>
+                    <h3 className="font-semibold text-lg">
+                      {getServiceName()}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {service.base_url || "No URL configured"}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{service.endpoints.length} endpoints</Badge>
+                  <Badge variant="secondary">
+                    {service.endpoints.length} endpoints
+                  </Badge>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      setShowDeleteDialog(true)
+                      e.stopPropagation();
+                      setShowDeleteDialog(true);
                     }}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -110,7 +134,10 @@ export function ServiceCard({
             <CardContent className="pt-0">
               {/* Base URL Configuration */}
               <div className="mb-6 p-4 bg-muted/30 rounded-lg">
-                <Label htmlFor={`base-url-${serviceIndex}`} className="text-sm font-medium">
+                <Label
+                  htmlFor={`base-url-${serviceIndex}`}
+                  className="text-sm font-medium"
+                >
                   Base URL *
                 </Label>
                 <Input
@@ -125,7 +152,9 @@ export function ServiceCard({
               {/* Section Navigation */}
               <div className="flex gap-2 mb-4">
                 <Button
-                  variant={activeSection === "endpoints" ? "default" : "outline"}
+                  variant={
+                    activeSection === "endpoints" ? "default" : "outline"
+                  }
                   size="sm"
                   onClick={() => setActiveSection("endpoints")}
                   className="flex items-center gap-2 transition-colors duration-200"
@@ -140,7 +169,7 @@ export function ServiceCard({
                   className="flex items-center gap-2 transition-colors duration-200"
                 >
                   <Settings className="h-4 w-4" />
-                  Headers ({service.default_headers.length})
+                  Headers ({service.default_headers?.length || 0})
                 </Button>
               </div>
 
@@ -159,16 +188,24 @@ export function ServiceCard({
                     <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
                       <Globe className="h-12 w-12 mx-auto mb-3 opacity-50" />
                       <p>No endpoints configured</p>
-                      <p className="text-sm">Add your first endpoint to get started</p>
+                      <p className="text-sm">
+                        Add your first endpoint to get started
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {service.endpoints.map((endpoint, endpointIndex) => (
                         <EndpointCard
-                          key={endpointIndex}
+                          key={endpoint.path}
                           endpoint={endpoint}
                           endpointIndex={endpointIndex}
-                          onUpdate={(field, value) => handleUpdateEndpoint(endpointIndex, field, value)}
+                          onUpdate={(field, value) =>
+                            handleUpdateEndpoint(
+                              endpointIndex,
+                              field as string,
+                              value
+                            )
+                          }
                           onRemove={() => handleRemoveEndpoint(endpointIndex)}
                           onMarkChanged={onMarkChanged}
                         />
@@ -181,7 +218,9 @@ export function ServiceCard({
               {activeSection === "headers" && (
                 <HeadersSection
                   headers={service.default_headers}
-                  onUpdate={(headers) => handleUpdate("default_headers", headers)}
+                  onUpdate={(headers) =>
+                    handleUpdate("default_headers", headers)
+                  }
                   onMarkChanged={onMarkChanged}
                 />
               )}
@@ -198,5 +237,5 @@ export function ServiceCard({
         onConfirm={handleRemove}
       />
     </>
-  )
+  );
 }

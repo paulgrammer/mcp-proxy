@@ -2,9 +2,12 @@ package proxy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -12,6 +15,7 @@ import (
 	"github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"gopkg.in/yaml.v3"
 )
 
 // Option is a function that configures the server
@@ -65,7 +69,9 @@ type Proxy struct {
 	transport transport.Interface
 	client    *client.Client
 
-	wg sync.WaitGroup
+	wg         sync.WaitGroup
+	configFile string  // Path to the configuration file
+	mcpConfig  *Config // Current configuration
 }
 
 // NewServer creates a new MCP server with the given options.
@@ -98,6 +104,39 @@ func NewServerFromConfig(cfg *Config, opts ...Option) (*Proxy, error) {
 		},
 		logger:        slog.Default(),
 		clientManager: NewClientManager(),
+		mcpConfig:     cfg,
+	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt(server)
+	}
+
+	// Setup endpoints from configuration
+	if err := server.setupEndpointsFromConfig(cfg); err != nil {
+		return nil, fmt.Errorf("failed to setup endpoints: %w", err)
+	}
+
+	return server, nil
+}
+
+// NewServerFromConfigFile creates a new MCP server from configuration file
+func NewServerFromConfigFile(configFile string, opts ...Option) (*Proxy, error) {
+	cfg, err := ParseConfig(configFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	server := &Proxy{
+		config: config{
+			Name:    cfg.MCP.ServerName,
+			Addr:    ":8888",
+			BaseURL: "",
+		},
+		logger:        slog.Default(),
+		clientManager: NewClientManager(),
+		configFile:    configFile,
+		mcpConfig:     cfg,
 	}
 
 	// Apply options
@@ -283,6 +322,102 @@ func (s *Proxy) AddResourceTemplate(template mcp.ResourceTemplate, handler serve
 	})
 }
 
+// configAPIHandler handles configuration API requests
+func (s *Proxy) configAPIHandler() http.Handler {
+	mux := http.NewServeMux()
+
+	// Enable CORS for all config endpoints
+	corsHandler := func(h http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			h(w, r)
+		}
+	}
+
+	// /api/config - Handle GET and PUT requests for configuration
+	mux.HandleFunc("/api/config", corsHandler(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			if s.mcpConfig == nil {
+				http.Error(w, "No configuration available", http.StatusNotFound)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(s.mcpConfig); err != nil {
+				s.logger.Error("Failed to encode config", "error", err)
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+		case http.MethodPut:
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "Failed to read request body", http.StatusBadRequest)
+				return
+			}
+
+			var newConfig Config
+			if err := json.Unmarshal(body, &newConfig); err != nil {
+				http.Error(w, "Invalid JSON", http.StatusBadRequest)
+				return
+			}
+
+			// Validate the new configuration
+			if err := validateParsedConfig(&newConfig); err != nil {
+				http.Error(w, fmt.Sprintf("Configuration validation failed: %v", err), http.StatusBadRequest)
+				return
+			}
+
+			// Set defaults
+			if err := setConfigDefaults(&newConfig); err != nil {
+				http.Error(w, fmt.Sprintf("Failed to set defaults: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			// Post-process the configuration
+			if err := postProcessParsedConfig(&newConfig); err != nil {
+				http.Error(w, fmt.Sprintf("Failed to post-process config: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			// Save to file if configFile is set
+			if s.configFile != "" {
+				yamlData, err := yaml.Marshal(&newConfig)
+				if err != nil {
+					http.Error(w, "Failed to marshal config to YAML", http.StatusInternalServerError)
+					return
+				}
+
+				if err := os.WriteFile(s.configFile, yamlData, 0644); err != nil {
+					s.logger.Error("Failed to write config file", "error", err, "file", s.configFile)
+					http.Error(w, "Failed to save configuration file", http.StatusInternalServerError)
+					return
+				}
+			}
+
+			// Update the current configuration
+			s.mcpConfig = &newConfig
+
+			s.logger.Info("Configuration updated successfully")
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Configuration updated successfully"})
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}))
+
+	return mux
+}
+
 // Start starts the server in a goroutine. Make sure to defer Close() after Start().
 // When using NewServer(), the returned server is already started.
 func (s *Proxy) Start(ctx context.Context) error {
@@ -319,10 +454,13 @@ func (s *Proxy) Start(ctx context.Context) error {
 
 		mux := http.NewServeMux()
 		webHandler := webHandler()
+		configAPI := s.configAPIHandler()
 		mux.Handle("/sse", sseServer.SSEHandler())
 		mux.Handle("/message", sseServer.MessageHandler())
+		mux.Handle("/api/", configAPI)
 		mux.Handle("/config/", webHandler)
 		mux.Handle("/assets/", webHandler)
+		// mux.Handle("/", webHandler)
 
 		httpServer := &http.Server{
 			Addr:    addr,
