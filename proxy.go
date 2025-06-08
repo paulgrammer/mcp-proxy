@@ -318,8 +318,11 @@ func (s *Proxy) Start(ctx context.Context) error {
 		)
 
 		mux := http.NewServeMux()
+		webHandler := webHandler()
 		mux.Handle("/sse", sseServer.SSEHandler())
 		mux.Handle("/message", sseServer.MessageHandler())
+		mux.Handle("/config/", webHandler)
+		mux.Handle("/assets/", webHandler)
 
 		httpServer := &http.Server{
 			Addr:    addr,
