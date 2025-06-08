@@ -1,0 +1,114 @@
+mcp:
+  server_name: MCP HTTP Proxy
+  version: 1.0.0
+backends:
+  - base_url: https://jsonplaceholder.typicode.com
+    default_headers:
+      - type: constant
+        name: Content-Type
+        value: application/json
+    endpoints:
+      - capability: tool
+        mode: client
+        name: create_post
+        method: POST
+        path: /posts
+        description: Creates a new post with title and body
+        headers: []
+        wait_response: true
+        response_timeout: 30s
+        body_params:
+          - data_type: string
+            value_type: dynamic
+            description: The post title
+            identifier: title
+            required: true
+          - data_type: string
+            value_type: dynamic
+            description: The post body content
+            identifier: body
+            required: true
+          - data_type: number
+            value_type: dynamic
+            description: User ID of the post author
+            identifier: userId
+            required: true
+        query_parameters: []
+        path_parameters: []
+      - capability: tool
+        mode: client
+        name: posts
+        method: GET
+        path: /posts
+        description: Retrieves all posts from the API
+        headers: []
+        wait_response: true
+        response_timeout: 30s
+        body_params: []
+        query_parameters: []
+        path_parameters: []
+      - capability: tool
+        mode: client
+        name: post_by_id
+        method: GET
+        path: /posts/{id}
+        description: Retrieves a specific post by ID
+        headers: []
+        wait_response: true
+        response_timeout: 30s
+        body_params: []
+        query_parameters: []
+        path_parameters:
+          - data_type: number
+            value_type: dynamic
+            description: The post ID to retrieve
+            identifier: id
+            required: true
+      - capability: prompt
+        name: post_template
+        method: GET
+        path: /posts/1
+        description: Generates a template for creating posts based on existing post structure
+        headers: []
+        wait_response: true
+        response_timeout: 30s
+        body_params: []
+        query_parameters: []
+        path_parameters: []
+  - base_url: https://api.open-meteo.com
+    default_headers: []
+    endpoints:
+      - capability: tool
+        mode: client
+        name: get_weather
+        method: GET
+        path: /v1/forecast
+        description: Get the weather forecast for temperature, wind speed and relative humidity
+        headers: []
+        wait_response: true
+        response_timeout: 30s
+        body_params: []
+        query_parameters:
+          - data_type: number
+            value_type: dynamic
+            description: The latitude of the location to get the weather for
+            identifier: latitude
+            required: true
+          - data_type: number
+            value_type: dynamic
+            description: The longitude of the location to get the weather for
+            identifier: longitude
+            required: true
+          - data_type: string
+            value_type: constant
+            description: Current weather parameters to include
+            identifier: current
+            required: true
+            value: temperature_2m,wind_speed_10m
+          - data_type: string
+            value_type: constant
+            description: Hourly weather parameters to include
+            identifier: hourly
+            required: true
+            value: temperature_2m,relative_humidity_2m,wind_speed_10m
+        path_parameters: []

@@ -21,7 +21,7 @@ var Build string
 
 func main() {
 	// Define command-line flags
-	configPath := flag.String("config", "./config.yml", "Path to the configuration file")
+	configPath := flag.String("config", "config.yml", "Path to the configuration file")
 	version := flag.Bool("version", false, "Print version information and exit")
 	flag.Parse()
 
